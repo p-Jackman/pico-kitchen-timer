@@ -2,22 +2,28 @@ import time
 import tm1637
 from machine import Pin
 
+#define pins
 display = tm1637.TM1637(clk=Pin(26), dio=Pin(27))
 reset_button = Pin(13, Pin.IN, Pin.PULL_DOWN)
 seconds_up_button = Pin(12, Pin.IN, Pin.PULL_DOWN)
 minutes_up_button = Pin(14, Pin.IN, Pin.PULL_DOWN)
 restart_button = Pin(15, Pin.IN, Pin.PULL_DOWN)
 
-#default time to start at, global variable storing current time in seconds
-current_time = 600
+#default time to start at
+default_start_time = 10 * 60
+
+#stores current time in seconds
+current_time = default_start_time
 
 seconds_counter = 0
 minutes_counter = 0
-
 start_time = time.time()
 
-# current state: 0 = counting down, 1 = paused, 2 = end loop
+# current state: 0 = counting down, 1 = paused, 2 = end_loop
 state = 1
+
+#maximum value of the display in seconds
+display_max_value = 99 * 60 + 59
 
 
 def update_display(raw_seconds):
@@ -28,6 +34,7 @@ def update_display(raw_seconds):
     return    
     
 
+#loop to show end screen
 def endloop():
     display.show(" end")
     time.sleep(0.75)
@@ -36,7 +43,7 @@ def endloop():
     return
 
 
-# reset button interupt function
+# reset button interupt function defined by state diagram
 def interupt(Pin):
     global state
     
@@ -48,13 +55,13 @@ def interupt(Pin):
         
     elif state == 2:
         state = 1
-    print("state: " + str(state))
     time.sleep(0.25)
     return
 
 reset_button.irq(trigger = Pin.IRQ_RISING, handler = interupt)
 
 
+#increment seconds by 1
 def seconds_up():
     global current_time
     global seconds_counter
@@ -64,14 +71,15 @@ def seconds_up():
         current_time = current_time + 1
         time.sleep(0.15)
         seconds_counter += 1
-        print(seconds_counter)
     
+    #faster counting after button has been held for 0.9 seconds
     elif seconds_up == True and seconds_counter > 5:
         current_time = current_time + 1
         time.sleep(0.07)
     
     else:
         seconds_counter = 0
+
         
 def minutes_up():
     global current_time
@@ -91,6 +99,7 @@ def minutes_up():
         minutes_counter = 0
 
 
+#sets counter to 0 if restart button is pressed
 def restart_check():
     global current_time
     restart_value = restart_button.value()
@@ -100,11 +109,10 @@ def restart_check():
         time.sleep(0.1)
 
 
-
 if __name__ == '__main__':
     while True:
         if state == 0:
-            #count(current_time, start_time, last_time)
+            #count down by 1
             current_time = current_time - 1
             time.sleep(1)
             
@@ -123,13 +131,17 @@ if __name__ == '__main__':
             minutes_up()
             restart_check()
             
-            if current_time >= 5999:
-                current_time = 5999
+            #if at maximum value of display, do not go over
+            if current_time >= display_max_value:
+                current_time = display_max_value
                 
             #start_time = time.time()
         
         #end state
         elif state == 2:
             endloop()
-            current_time = 600
+            current_time = default_start_time
+
+
+
 
