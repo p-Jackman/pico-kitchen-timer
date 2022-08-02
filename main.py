@@ -77,14 +77,11 @@ def minutes_up():
     global current_time
     global minutes_counter
     minutes_up = minutes_up_button.value()
-    #print(minutes_up)
     
     if minutes_up == True and minutes_counter <= 5:
         current_time = current_time + 60
         time.sleep(0.25)
         minutes_counter += 1
-        
-#         print(seconds_counter)
     
     elif minutes_up == True and minutes_counter > 5:
         current_time = current_time + 60
